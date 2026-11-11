@@ -1,1 +1,1 @@
-window.SKY_CONFIG={url:'https://XXXX.supabase.co',key:'sb_publishable_XXXX'};
+window.SKY_CONFIG={url:'https://sqoomtjgnysidgbekarh.supabase.co/rest/v1/',key:'sb_publishable_rlYi2QB7jGTp9e-Ni8Z1aQ_2aGaE0ip'};
