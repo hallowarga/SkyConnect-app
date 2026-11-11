@@ -1,5 +1,5 @@
 const V='skyconnect-v1';
-const ASSETS=['./','index.html','style.css','app.js','logo.png','mark.png','icon-192.png','manifest.webmanifest'];
+const ASSETS=['./','index.html','style.css','app.js','config.js','logo.png','mark.png','icon-192.png','manifest.webmanifest'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener('fetch',e=>{

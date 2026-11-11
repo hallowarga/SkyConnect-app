@@ -1,37 +1,5 @@
 const rp=n=>'Rp '+Number(n).toLocaleString('id-ID');
-const DEF={
-customers:[
-{id:'SKY001',name:'Budi Santoso',paket:'Home 20 Mbps',harga:250000,due:'2026-11-25',paid:false,iso:false,addons:['a1']},
-{id:'SKY002',name:'Siti Rahma',paket:'Home 50 Mbps',harga:350000,due:'2026-11-05',paid:false,iso:true,addons:[]},
-{id:'SKY003',name:'Toko Maju Jaya',paket:'Bisnis 100 Mbps',harga:750000,due:'2026-11-28',paid:true,iso:false,addons:['a1','a2']}],
-addons:[
-{id:'a1',name:'IP Public Statis',price:50000,desc:'Untuk CCTV remote & server'},
-{id:'a2',name:'Extra Access Point',price:35000,desc:'Perluas jangkauan WiFi'},
-{id:'a3',name:'Prioritas Bandwidth',price:75000,desc:'Kecepatan stabil jam sibuk'}],
-catalog:[
-{n:'Paket CCTV 4 Kamera',p:'Mulai Rp 2.800.000',d:'Kamera 2MP, DVR, HDD 1TB, pasang & setting remote HP.'},
-{n:'Paket CCTV 8 Kamera',p:'Mulai Rp 5.200.000',d:'Cocok toko, gudang, dan ruko. Garansi instalasi.'},
-{n:'Pembuatan Aplikasi (APK)',p:'Sesuai kebutuhan',d:'Aplikasi Android untuk bisnis Anda: toko, layanan, absensi, dll.'},
-{n:'Pembuatan Website',p:'Mulai Rp 1.500.000',d:'Company profile, toko online, domain + hosting.'},
-{n:'Instalasi Jaringan & WiFi',p:'Mulai Rp 500.000',d:'Kabel, access point, dan konfigurasi untuk kantor/rumah.'}],
-pay:[{date:'2026-11-03',id:'SKY003',name:'Toko Maju Jaya',amount:835000,method:'Transfer Virtual Account'},{date:'2026-10-04',id:'SKY001',name:'Budi Santoso',amount:300000,method:'QRIS'},{date:'2026-10-05',id:'SKY003',name:'Toko Maju Jaya',amount:835000,method:'E-Wallet'},{date:'2026-10-06',id:'SKY002',name:'Siti Rahma',amount:350000,method:'QRIS'}],
-cs:{wa:'',jam:'Senin-Sabtu, 08.00-17.00'}};
-let db;try{db=JSON.parse(localStorage.getItem('sky')||'null')}catch(e){}
-if(!db)db=JSON.parse(JSON.stringify(DEF));
-if(!db.pay)db.pay=JSON.parse(JSON.stringify(DEF.pay));
-if(!db.cs)db.cs={wa:'',jam:''};
-const PLANS=[{n:'Home 10 Mbps',p:200000,d:'1-3 perangkat, browsing & chat'},{n:'Home 20 Mbps',p:250000,d:'Keluarga kecil, streaming'},{n:'Home 50 Mbps',p:350000,d:'Streaming, gaming, banyak perangkat'},{n:'Bisnis 100 Mbps',p:750000,d:'Kantor & toko, dukungan prioritas'}];
-if(!db.plans)db.plans=JSON.parse(JSON.stringify(PLANS));
-if(!db.reg)db.reg=[];
-if(!db.rek)db.rek=[{bank:'BCA',no:'1234567890',an:'SkyConnect Technology'},{bank:'DANA',no:'081234567890',an:'SkyConnect Technology'}];
-if(!db.auth)db.auth={admin:'1234',super:'super123'};
-if(!db.sal)db.sal=[];
-if(db.payNote===undefined)db.payNote='Transfer sesuai nominal, lalu kirim bukti via WhatsApp.';
-db.customers.forEach(c=>{if(!c.pw)c.pw='sky123';if(c.pin===undefined)c.pin=''});
-if(!db.promo)db.promo={a:'Bayar 3 Bulan',b:'Gratis 1 Bulan',c:'Nikmati Internet Lebih Hemat'};
-if(!db.news)db.news=[{t:'Selamat datang di SkyConnect',b:'Kelola tagihan, saldo, dan layanan Anda dari satu aplikasi.',d:new Date().toISOString().slice(0,10)}];
-if(db.qris===undefined)db.qris='';
-const save=()=>{try{localStorage.setItem('sky',JSON.stringify(db))}catch(e){}};
+let db={customers:[],pay:[],sal:[],reg:[],addons:[],plans:[],catalog:[],cs:{wa:'',jam:''},promo:{a:'',b:'',c:''},news:[],rek:[],payNote:'',qris:''};
 let me=null,admin=false,sup=false,guest=false,flt='all',lastReg=null,cart={},topAmt=0,tab='home',modal='';
 const cust=()=>db.customers.find(c=>c.id===me);
 const total=c=>c.harga+c.addons.reduce((s,i)=>s+((db.addons.find(a=>a.id===i)||{}).price||0),0);
@@ -40,13 +8,8 @@ const $=h=>document.getElementById('app').innerHTML=h;
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 
 
-function doLogin(){
- const v=uid.value.trim().toUpperCase();
- if(v==='ADMIN'||v==='SUPER'){const ok=v==='SUPER'?pin.value===db.auth.super:pin.value===db.auth.admin;if(ok){admin=true;sup=v==='SUPER';me=null;tab='adm';return render()}return err.textContent='ID atau sandi admin salah.'}
- const cu=db.customers.find(c=>c.id===v);if(!cu)return err.textContent='ID tidak ditemukan. Periksa ID di tagihan Anda.';if(cu.pw!==pin.value)return err.textContent='Sandi salah. Ketuk Lupa sandi untuk meminta reset.';sup=false;
- me=v;admin=false;tab='home';render();
-}
-function logout(){me=null;admin=false;sup=false;guest=false;cart={};login()}
+
+
 
 
 function billView(){
@@ -71,7 +34,7 @@ function payModal(){
  ${(c.saldo||0)>=total(c)?`<button class="opt" onclick="pinModal()"><b>Saldo</b> (tersedia ${rp(c.saldo)})</button>`:`<p class="mut">Saldo ${rp(c.saldo||0)} belum cukup. Isi saldo dulu atau pilih cara lain.</p>`}<button class="opt" onclick="modal=transferModal('bayar');render()"><b>Transfer bank / e-wallet</b><div class="mut">Lihat rekening, lalu konfirmasi via WhatsApp</div></button>
  <p class="mut">Setelah transfer, admin memverifikasi dan menandai tagihan lunas.</p></div></div>`;
 }
-function pay(m){const c=cust();const sd=m==='Saldo';if(sd&&(c.saldo||0)<total(c))return;if(sd){c.saldo-=total(c);logSal(c,-total(c),'Bayar tagihan')}c.paid=true;c.iso=false;db.pay.push({date:today(),id:c.id,name:c.name,amount:total(c),method:m,noinc:sd});save();modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Pembayaran berhasil</h3><p class="mut">via ${m}. Layanan Anda aktif.</p><button class="btn">Tutup</button></div></div>`;render()}
+
 
 function addons(){
  const c=cust();
@@ -79,7 +42,7 @@ function addons(){
  ${db.addons.map(a=>`<div class="card row"><div><b>${esc(a.name)}</b><div class="mut">${esc(a.desc)}</div><div class="tag">${rp(a.price)}/bulan</div></div>
  <label class="sw"><input type="checkbox" aria-label="${esc(a.name)}" ${c.addons.includes(a.id)?'checked':''} onchange="togAdd('${a.id}',this.checked)"><span></span></label></div>`).join('')||'<div class="card mut">Belum ada add-on.</div>'}`;
 }
-function togAdd(id,on){const c=cust();c.addons=c.addons.filter(x=>x!==id);if(on)c.addons.push(id);save()}
+
 
 function catalog(){
  return `<h2>Katalog produk & jasa</h2>${cartBar()}${db.catalog.map((p,i)=>`<div class="card"><b>${esc(p.n)}</b><div class="tag">${esc(p.p)}</div><p class="mut" style="margin:6px 0 10px">${esc(p.d)}</p>
@@ -96,63 +59,62 @@ function adminView(){
  <div class="card"><b>Tambah add-on baru</b><label for="nn">Nama</label><input id="nn"><label for="nd">Keterangan</label><input id="nd"><label for="np">Harga per bulan</label><input id="np" type="number">
  <button class="btn" onclick="newAdd()">Simpan add-on</button></div>`;
 }
-function iso(id,v){db.customers.find(c=>c.id===id).iso=v;save()}
-function editPrice(id,v){db.addons.find(a=>a.id===id).price=Number(v)||0;save()}
-function delAdd(id){db.addons=db.addons.filter(a=>a.id!==id);db.customers.forEach(c=>c.addons=c.addons.filter(x=>x!==id));save();render()}
-function newAdd(){if(!nn.value.trim())return;db.addons.push({id:'a'+Date.now(),name:nn.value.trim(),desc:nd.value.trim(),price:Number(np.value)||0});save();render()}
+
+
+
+
 const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>new Date(Date.now()+7*36e5).toISOString().slice(0,10);
 const fd=d=>d.split('-').reverse().join('/');
 const waLink=m=>`https://wa.me/${db.cs.wa}?text=${encodeURIComponent(m)}`;
 function profile(){const c=cust();return `<h2>Profil saya</h2><div class="card"><label>ID Pengguna WiFi</label><input value="${c.id}" disabled><label for="pn">Nama</label><input id="pn" value="${esc(c.name)}"><label for="pp">No. WhatsApp</label><input id="pp" type="tel" value="${esc(c.phone||'')}"><label for="pa">Alamat pemasangan</label><input id="pa" value="${esc(c.addr||'')}"><div id="pmsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveProf()">Simpan perubahan</button></div>${secBox()}<button class="btn alt" onclick="logout()">Keluar</button>`}
-function saveProf(){const c=cust();if(!pn.value.trim()){pmsg.textContent='Nama tidak boleh kosong.';return}c.name=pn.value.trim();c.phone=pp.value.trim();c.addr=pa.value.trim();save();pmsg.textContent='Data tersimpan.'}
-function help(){const c=cust();const T=[['Internet lambat / putus','Halo SkyConnect, internet saya lambat/putus.'],['Pertanyaan pembayaran','Halo SkyConnect, saya mau tanya soal pembayaran.'],['Pasang CCTV / layanan baru','Halo SkyConnect, saya mau tanya pemasangan baru.']];
-return `<h2>Bantuan</h2>${db.cs.wa?'':'<div class="alert">Nomor CS belum diatur oleh admin.</div>'}<p class="mut">${esc(db.cs.jam||'')}</p>${T.map(t=>db.cs.wa?`<a class="opt" style="text-decoration:none" target="_blank" rel="noopener" href="${waLink(t[1]+' ID: '+c.id+' ('+c.name+')')}">${t[0]}</a>`:'').join('')}${db.cs.wa?`<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waLink('Halo SkyConnect, saya butuh bantuan. ID: '+c.id+' ('+c.name+')')}">Chat CS via WhatsApp</a>`:''}`}
+
+
 function rekap(){const P=db.pay.filter(x=>!x.noinc).sort((a,b)=>b.date.localeCompare(a.date));const m=today().slice(0,7);const sum=a=>a.reduce((s,x)=>s+x.amount,0);const mon=P.filter(x=>x.date.startsWith(m));const by={};P.forEach(x=>{const k=x.date.slice(0,7);by[k]=(by[k]||0)+x.amount});const bl=db.customers.filter(c=>!c.paid);
 return `<h2>Rekap pemasukan</h2><div class="hero"><small>Pemasukan bulan ini</small><div class="big">${rp(sum(mon))}</div><small>${mon.length} pembayaran. Belum masuk ${rp(bl.reduce((s,c)=>s+total(c),0))} dari ${bl.length} pelanggan.</small></div><div class="card"><b>Per bulan</b>${Object.keys(by).sort().reverse().map(k=>`<div class="row mut" style="margin-top:6px"><span>${MN[+k.slice(5)-1]} ${k.slice(0,4)}</span><b style="color:var(--ink)">${rp(by[k])}</b></div>`).join('')}</div><div class="card"><b>Riwayat pembayaran</b>${P.map(x=>`<div class="row" style="margin-top:8px"><div>${esc(x.name)}<div class="mut">${fd(x.date)} · ${esc(x.method)}</div></div><b>${rp(x.amount)}</b></div>`).join('')||'<p class="mut">Belum ada pembayaran.</p>'}</div>`}
 function settings(){return newsBox()+planBox()+`<h2>Pengaturan CS</h2><div class="card"><label for="cw">Nomor WhatsApp CS (format 628xxx)</label><input id="cw" type="tel" value="${esc(db.cs.wa)}" placeholder="6281234567890"><label for="cj">Jam layanan</label><input id="cj" value="${esc(db.cs.jam||'')}"><div id="cmsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveCS()">Simpan</button></div>`}
-function saveCS(){const w=cw.value.replace(/\D/g,'').replace(/^0/,'62');db.cs.wa=w;db.cs.jam=cj.value.trim();save();cmsg.textContent=w?'Tersimpan. Nomor aktif: +'+w:'Nomor dikosongkan.'}
+
 function editCust(id){const c=db.customers.find(x=>x.id===id);modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:90vh;overflow:auto"><h3>Ubah ${c.id}</h3><label for="en">Nama</label><input id="en" value="${esc(c.name)}"><label for="ep">Paket</label><input id="ep" value="${esc(c.paket)}"><label for="eh">Harga paket per bulan</label><input id="eh" type="number" value="${c.harga}"><label for="ed">Tanggal jatuh tempo</label><input id="ed" type="date" value="${c.due}"><label for="es">Status tagihan</label><select id="es"><option value="0" ${c.paid?'':'selected'}>Belum bayar</option><option value="1" ${c.paid?'selected':''}>Lunas</option></select><button class="btn" onclick="saveCust('${id}')">Simpan</button></div></div>`;render()}
-function saveCust(id){const c=db.customers.find(x=>x.id===id);const was=c.paid;c.name=en.value.trim()||c.name;c.paket=ep.value.trim()||c.paket;c.harga=Number(eh.value)||0;c.due=ed.value||c.due;c.paid=es.value==='1';if(!was&&c.paid){c.iso=false;db.pay.push({date:today(),id:c.id,name:c.name,amount:total(c),method:'Manual (admin)'})}save();modal='';render()}
-function newCust(){let k=1;while(db.customers.find(c=>c.id==='SKY'+String(k).padStart(3,'0')))k++;const id='SKY'+String(k).padStart(3,'0');db.customers.push({id,name:'Pelanggan baru',paket:'Home 20 Mbps',harga:250000,due:today(),paid:false,iso:false,addons:[],phone:'',addr:''});save();editCust(id)}
+
+
 const nz=p=>p.replace(/\D/g,'').replace(/^0/,'62');
 function topModal(){return `<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet"><h3>Isi saldo</h3><label for="tn">Nominal</label><select id="tn">${[50000,100000,200000,500000].map(v=>`<option value="${v}">${rp(v)}</option>`).join('')}</select><button class="btn" onclick="topAmt=Number(tn.value);modal=transferModal('topup');render()">Lanjut: lihat rekening</button><p class="mut">Saldo bertambah setelah admin memverifikasi transfer Anda.</p></div></div>`}
-function topup(m){const c=cust();const v=Number(tn.value);c.saldo=(c.saldo||0)+v;db.pay.push({date:today(),id:c.id,name:c.name,amount:v,method:'Isi saldo - '+m});save();modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Saldo bertambah ${rp(v)}</h3><p class="mut">Saldo sekarang ${rp(c.saldo)}.</p><button class="btn">Tutup</button></div></div>`;render()}
+
 function custList(){return db.customers.filter(c=>flt==='all'||(flt==='paid'?c.paid:!c.paid)).sort((a,b)=>a.paid-b.paid||a.due.localeCompare(b.due)||a.name.localeCompare(b.name))}
 function custHead(){const n=db.customers.length,p=db.customers.filter(c=>c.paid).length;const f=(k,l)=>`<button class="chip ${flt===k?'on':''}" onclick="flt='${k}';render()">${l}</button>`;return `<h2>Pelanggan</h2><div class="chips">${f('all','Semua '+n)}${f('unpaid','Belum bayar '+(n-p))}${f('paid','Lunas '+p)}</div>`}
-function markPaid(id){const c=db.customers.find(x=>x.id===id);if(c.paid)return;c.paid=true;c.iso=false;db.pay.push({date:today(),id:c.id,name:c.name,amount:total(c),method:'Manual (admin)'});save();render()}
-function unpaid(id){const c=db.customers.find(x=>x.id===id);c.paid=false;const i=db.pay.map(x=>x.id===id&&x.method==='Manual (admin)'&&x.date.startsWith(today().slice(0,7))).lastIndexOf(true);if(i>-1)db.pay.splice(i,1);save();render()}
+
+
 function gh(){return `<h2>Daftar harga</h2><p class="mut">Harga per bulan. Biaya pasang dan survei lokasi dikonfirmasi tim kami.</p>${db.plans.map(p=>`<div class="card row"><div><b>${esc(p.n)}</b><div class="mut">${esc(p.d||'')}</div></div><b>${rp(p.p)}</b></div>`).join('')}<h2>Add-on</h2>${db.addons.map(a=>`<div class="card row"><div><b>${esc(a.name)}</b><div class="mut">${esc(a.desc)}</div></div><b>${rp(a.price)}</b></div>`).join('')}<button class="btn" onclick="tab='reg';render()">Daftar sekarang</button>${catalog()}`}
 function regView(){return `<h2>Daftar pelanggan baru</h2><div class="card"><label for="rgn">Nama lengkap</label><input id="rgn"><label for="rgw">No. WhatsApp</label><input id="rgw" type="tel"><label for="rga">Alamat pemasangan</label><input id="rga"><label for="rgp">Buat sandi (min. 6 karakter)</label><input id="rgp" type="password"><label for="rgk">Pilih paket</label><select id="rgk">${db.plans.map(p=>`<option>${esc(p.n)}</option>`).join('')}</select><div id="rgmsg" class="mut" style="color:var(--warn);margin-bottom:8px"></div><button class="btn" onclick="sendReg()">Kirim pendaftaran</button></div>`}
-function sendReg(){if(!rgn.value.trim()||nz(rgw.value).length<9||!rga.value.trim()||rgp.value.length<6){rgmsg.textContent='Isi nama, nomor WhatsApp, alamat, dan sandi (min. 6 karakter).';return}lastReg={id:'R'+Date.now(),name:rgn.value.trim(),phone:rgw.value.trim(),addr:rga.value.trim(),paket:rgk.value,date:today(),pw:rgp.value};db.reg.push(lastReg);save();tab='regok';render()}
+
 function regOk(){const r=lastReg;return `<h2>Pendaftaran terkirim</h2><div class="card"><p>Terima kasih, ${esc(r.name)}. Tim SkyConnect akan menghubungi Anda lewat WhatsApp untuk jadwal survei dan ID pengguna.</p>${db.cs.wa?`<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waLink('Halo SkyConnect, saya baru mendaftar. Nama: '+r.name+', paket: '+r.paket+', alamat: '+r.addr)}">Percepat via WhatsApp CS</a>`:''}</div>`}
 function regBox(){if(!db.reg.length)return '';return `<h2>Pendaftaran baru (${db.reg.length})</h2>${db.reg.map(r=>`<div class="card"><b>${esc(r.name)}</b><div class="mut">${esc(r.paket)} · ${esc(r.phone)}<br>${esc(r.addr)}</div><div class="row" style="margin-top:10px;justify-content:flex-start"><button class="btn sm" onclick="approve('${r.id}')">Setujui</button><button class="btn alt sm" onclick="rejectReg('${r.id}')">Tolak</button></div></div>`).join('')}`}
-function rejectReg(id){if(!sup)return;db.reg=db.reg.filter(x=>x.id!==id);save();render()}
-function approve(rid){if(!sup)return;const r=db.reg.find(x=>x.id===rid);let k=1;while(db.customers.find(c=>c.id==='SKY'+String(k).padStart(3,'0')))k++;const id='SKY'+String(k).padStart(3,'0');const pl=db.plans.find(x=>x.n===r.paket)||{p:0};const d=new Date();d.setDate(d.getDate()+7);db.customers.push({id,name:r.name,paket:r.paket,harga:pl.p,due:d.toISOString().slice(0,10),paid:false,iso:false,addons:[],phone:r.phone,addr:r.addr,saldo:0,pw:r.pw||'sky123',pin:''});db.reg=db.reg.filter(x=>x.id!==rid);save();const msg='Halo '+r.name+', pendaftaran SkyConnect Anda disetujui. ID Pengguna WiFi Anda: '+id+'. Gunakan ID ini untuk login di aplikasi.';modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Pelanggan dibuat: ${id}</h3><p class="mut">${esc(r.name)} sudah masuk daftar pelanggan.</p><a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${nz(r.phone)}?text=${encodeURIComponent(msg)}">Kirim ID via WhatsApp</a></div></div>`;render()}
-function planBox(){return `<h2>Harga paket internet</h2>${db.plans.map((p,i)=>`<div class="card"><div class="row"><b>${esc(p.n)}</b><button class="btn alt sm" onclick="delPlan(${i})">Hapus</button></div><label>Harga per bulan</label><input type="number" value="${p.p}" onchange="db.plans[${i}].p=Number(this.value)||0;save()"></div>`).join('')}<div class="card"><label for="pln">Paket baru</label><input id="pln" placeholder="Home 100 Mbps"><label for="plp">Harga per bulan</label><input id="plp" type="number"><button class="btn" onclick="addPlan()">Tambah paket</button></div>`}
-function delPlan(i){db.plans.splice(i,1);save();render()}
-function addPlan(){if(!pln.value.trim())return;db.plans.push({n:pln.value.trim(),p:Number(plp.value)||0,d:''});save();render()}
+
+
+function planBox(){return `<h2>Harga paket internet</h2>${db.plans.map((p,i)=>`<div class="card"><div class="row"><b>${esc(p.n)}</b><button class="btn alt sm" onclick="delPlan(${i})">Hapus</button></div><label>Harga per bulan</label><input type="number" value="${p.p}" onchange="db.plans[${i}].p=Number(this.value)||0;cfgSet('plans')"></div>`).join('')}<div class="card"><label for="pln">Paket baru</label><input id="pln" placeholder="Home 100 Mbps"><label for="plp">Harga per bulan</label><input id="plp" type="number"><button class="btn" onclick="addPlan()">Tambah paket</button></div>`}
+
+
 function sendWA(msg,eid,clr){const ok=!!db.cs.wa;modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:90vh;overflow:auto"><h3>Kirim via WhatsApp</h3><p class="mut">Periksa pesan di bawah, lalu ketuk tombol Buka WhatsApp.</p><textarea readonly style="width:100%;height:150px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;margin-bottom:10px">${esc(msg)}</textarea>${ok?`<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waLink(msg)}" onclick="afterWA(${!!clr})">Buka WhatsApp</a>`:'<div class="alert" style="margin:0">Nomor WhatsApp CS belum diatur. Admin perlu mengisinya di tab Pengaturan.</div>'}</div></div>`;render();return ok}
 function afterWA(clr){setTimeout(()=>{modal='';if(clr){cart={};tab=guest?'gh':'cat'}render()},400)}
-function forgot(){const c=db.customers.find(x=>x.id===uid.value.trim().toUpperCase());if(!c){err.textContent='Isi ID Pengguna WiFi Anda dulu.';return}sendWA(['*RESET SANDI - SkyConnect*','ID Pelanggan: '+c.id,'Mohon reset sandi akun saya.'].join('\n'),'err')}
+
 function logSal(c,v,note){db.sal.push({date:today(),id:c.id,t:new Date().toTimeString().slice(0,5),amt:v,note,bal:c.saldo||0})}
 function salHist(c){const L=db.sal.filter(x=>x.id===c.id).slice(-3).reverse();if(!L.length)return '';return `<div class="card"><b>Riwayat saldo</b>${L.map(x=>`<div class="row mut" style="margin-top:6px"><span>${fd(x.date)} · ${esc(x.note)}</span><b style="color:${x.amt<0?'var(--warn)':'var(--ok)'}">${x.amt<0?'-':'+'}${rp(Math.abs(x.amt))}</b></div>`).join('')}</div>`}
 function secBox(){const c=cust();return `<div class="card"><b>Ubah sandi</b><label for="so">Sandi lama</label><input id="so" type="password"><label for="sn">Sandi baru (min. 6 karakter)</label><input id="sn" type="password"><div id="smsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="savePw()">Ubah sandi</button></div><div class="card"><b>PIN transaksi saldo</b><p class="mut">${c.pin?'PIN sudah dibuat.':'Belum ada PIN. Anda akan diminta membuatnya saat pertama bayar pakai saldo.'}</p>${c.pin?`<label for="po">PIN lama</label><input id="po" type="password" inputmode="numeric" maxlength="6"><label for="pnn">PIN baru (6 angka)</label><input id="pnn" type="password" inputmode="numeric" maxlength="6"><div id="pmsg2" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="savePinNew()">Ubah PIN</button><p class="mut">Lupa PIN? Minta reset ke admin lewat menu Bantuan.</p>`:''}</div>`}
-function savePw(){const c=cust();if(so.value!==c.pw){smsg.textContent='Sandi lama salah.';return}if(sn.value.length<6){smsg.textContent='Sandi baru minimal 6 karakter.';return}c.pw=sn.value;save();so.value='';sn.value='';smsg.textContent='Sandi berhasil diubah.'}
-function savePinNew(){const c=cust();if(po.value!==c.pin){pmsg2.textContent='PIN lama salah.';return}if(!/^\d{6}$/.test(pnn.value)){pmsg2.textContent='PIN baru harus 6 angka.';return}c.pin=pnn.value;save();po.value='';pnn.value='';pmsg2.textContent='PIN berhasil diubah.'}
+
+
 function pinModal(){const c=cust();const has=!!c.pin;modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet"><h3>${has?'Masukkan PIN transaksi':'Buat PIN transaksi'}</h3><p class="mut">${has?'PIN 6 angka untuk membayar dengan saldo.':'Buat PIN 6 angka untuk mengamankan saldo Anda.'}</p><input id="pk1" type="password" inputmode="numeric" maxlength="6" placeholder="PIN 6 angka">${has?'':'<input id="pk2" type="password" inputmode="numeric" maxlength="6" placeholder="Ulangi PIN">'}<div id="pkm" class="mut" style="color:var(--warn);margin-bottom:8px"></div><button class="btn" onclick="checkPin()">${has?'Bayar':'Simpan PIN & bayar'}</button></div></div>`;render()}
-function checkPin(){const c=cust();const v=pk1.value;if(!/^\d{6}$/.test(v)){pkm.textContent='PIN harus 6 angka.';return}if(c.pin){if(v!==c.pin){pkm.textContent='PIN salah.';return}}else{if(v!==pk2.value){pkm.textContent='PIN tidak sama.';return}c.pin=v;save()}pay('Saldo')}
+
 function transferModal(kind){const c=cust();const amt=kind==='bayar'?total(c):topAmt;return `<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:90vh;overflow:auto"><h3>${kind==='bayar'?'Transfer pembayaran':'Transfer isi saldo'}</h3><p class="mut">Nominal: <b>${rp(amt)}</b>. ${esc(db.payNote||'')}</p>${db.rek.map(r=>`<div class="card" style="margin-bottom:8px"><b>${esc(r.bank)}</b><div style="font-size:18px;font-weight:800">${esc(r.no)}</div><div class="mut">a.n. ${esc(r.an)}</div></div>`).join('')||'<div class="alert">Rekening belum diatur admin.</div>'}<div id="tmsg" class="mut" style="color:var(--warn);margin-bottom:8px"></div><button class="btn" onclick="confirmTf('${kind}',${amt})">Saya sudah transfer, kirim konfirmasi via WA</button></div></div>`}
 function confirmTf(kind,amt){const c=cust();sendWA(['*'+(kind==='bayar'?'KONFIRMASI PEMBAYARAN':'KONFIRMASI ISI SALDO')+' - SkyConnect*','ID Pelanggan: '+c.id,'Nama: '+c.name,'Nominal: '+rp(amt),'Tanggal: '+fd(today()),'Bukti transfer saya lampirkan di chat ini.'].join('\n'),'tmsg')}
 function saldoModal(id){const c=db.customers.find(x=>x.id===id);modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet"><h3>Saldo ${esc(c.name)}</h3><p class="mut">Saldo sekarang ${rp(c.saldo||0)}</p><label for="sa">Nominal</label><input id="sa" type="number" inputmode="numeric"><label for="sno">Catatan</label><input id="sno" placeholder="contoh: transfer BCA"><label class="row" style="justify-content:flex-start;margin-bottom:8px"><input id="sci" type="checkbox" checked style="width:auto;margin:0"> Catat sebagai pemasukan (saat tambah saldo)</label><div id="sm" class="mut" style="color:var(--warn);margin-bottom:8px"></div><div class="row"><button class="btn" onclick="adjSaldo('${id}',1)">Tambah</button><button class="btn alt" onclick="adjSaldo('${id}',-1)">Kurangi</button></div></div></div>`;render()}
-function adjSaldo(id,s){const c=db.customers.find(x=>x.id===id);const v=Number(sa.value);if(!(v>0)){sm.textContent='Isi nominal lebih dari 0.';return}if(s<0&&v>(c.saldo||0)){sm.textContent='Saldo tidak cukup untuk dikurangi.';return}c.saldo=(c.saldo||0)+s*v;logSal(c,s*v,sno.value.trim()||(s>0?'Tambah manual':'Kurangi manual'));if(s>0&&sci.checked)db.pay.push({date:today(),id:c.id,name:c.name,amount:v,method:'Isi saldo (manual)'});save();modal='';render()}
-function resetPw(id){const c=db.customers.find(x=>x.id===id);const t=String(Math.floor(100000+Math.random()*900000));c.pw=t;save();const msg='Halo '+c.name+', sandi SkyConnect Anda sudah direset. Sandi sementara: '+t+'. Segera ganti di menu Profil.';modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Sandi direset</h3><p class="mut">Sandi sementara ${esc(c.name)}: <b>${t}</b></p>${c.phone?`<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${nz(c.phone)}?text=${encodeURIComponent(msg)}">Kirim via WhatsApp</a>`:'<p class="mut">No. WhatsApp pelanggan belum diisi.</p>'}</div></div>`;render()}
-function resetPin(id){const c=db.customers.find(x=>x.id===id);c.pin='';save();modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>PIN direset</h3><p class="mut">${esc(c.name)} akan diminta membuat PIN baru saat bayar pakai saldo.</p><button class="btn">Tutup</button></div></div>`;render()}
+
+
+
 function regNote(){const n=db.reg.length;if(!n)return '';return sup?`<div class="alert">${n} pendaftaran menunggu. Setujui atau tolak di tab Super.</div>`:`<p class="mut">${n} pendaftaran menunggu persetujuan super admin.</p>`}
-function superView(){return regBox()+`<h2>Rekening pembayaran</h2>${db.rek.map((r,i)=>`<div class="card"><div class="row"><b>${esc(r.bank)}</b><button class="btn alt sm" onclick="delRek(${i})">Hapus</button></div><label>Nomor rekening / e-wallet</label><input value="${esc(r.no)}" onchange="db.rek[${i}].no=this.value.trim();save()"><label>Atas nama</label><input value="${esc(r.an)}" onchange="db.rek[${i}].an=this.value.trim();save()"></div>`).join('')}<div class="card"><b>Tambah rekening</b><label for="rb">Bank / e-wallet</label><input id="rb" placeholder="BRI / OVO"><label for="rno">Nomor</label><input id="rno"><label for="ran">Atas nama</label><input id="ran"><button class="btn" onclick="addRek()">Tambah rekening</button></div><div class="card"><label>Instruksi pembayaran (tampil ke pelanggan)</label><input value="${esc(db.payNote||'')}" onchange="db.payNote=this.value;save()"></div>${qrisBox()}<h2>Akun admin</h2><div class="card"><label for="apA">PIN admin baru</label><input id="apA" type="password"><label for="apS">Sandi super admin baru</label><input id="apS" type="password"><div id="amsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveAuth()">Simpan</button><p class="mut">Kosongkan kolom yang tidak ingin diubah.</p></div>`}
-function addRek(){if(!rb.value.trim()||!rno.value.trim())return;db.rek.push({bank:rb.value.trim(),no:rno.value.trim(),an:ran.value.trim()});save();render()}
-function delRek(i){db.rek.splice(i,1);save();render()}
-function saveAuth(){const a=apA.value.trim(),s=apS.value.trim();if(a){if(a.length<4){amsg.textContent='PIN admin minimal 4 karakter.';return}db.auth.admin=a}if(s){if(s.length<6){amsg.textContent='Sandi super admin minimal 6 karakter.';return}db.auth.super=s}save();apA.value='';apS.value='';amsg.textContent='Tersimpan.'}
+function superView(){return regBox()+`<h2>Rekening pembayaran</h2>${db.rek.map((r,i)=>`<div class="card"><div class="row"><b>${esc(r.bank)}</b><button class="btn alt sm" onclick="delRek(${i})">Hapus</button></div><label>Nomor rekening / e-wallet</label><input value="${esc(r.no)}" onchange="db.rek[${i}].no=this.value.trim();cfgSet('rek')"><label>Atas nama</label><input value="${esc(r.an)}" onchange="db.rek[${i}].an=this.value.trim();cfgSet('rek')"></div>`).join('')}<div class="card"><b>Tambah rekening</b><label for="rb">Bank / e-wallet</label><input id="rb" placeholder="BRI / OVO"><label for="rno">Nomor</label><input id="rno"><label for="ran">Atas nama</label><input id="ran"><button class="btn" onclick="addRek()">Tambah rekening</button></div><div class="card"><label>Instruksi pembayaran (tampil ke pelanggan)</label><input value="${esc(db.payNote||'')}" onchange="db.payNote=this.value;cfgSet('payNote')"></div>${qrisBox()}<h2>Akun admin</h2><div class="card"><label for="apA">PIN admin baru</label><input id="apA" type="password"><label for="apS">Sandi super admin baru</label><input id="apS" type="password"><div id="amsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveAuth()">Simpan</button><p class="mut">Kosongkan kolom yang tidak ingin diubah.</p></div>`}
+
+
+
 function addCart(i){cart[i]=(cart[i]||0)+1;render()}
 function qty(i,d){cart[i]=(cart[i]||0)+d;if(cart[i]<=0)delete cart[i];if(!Object.keys(cart).length)tab=guest?'gh':'cat';render()}
 function cartBar(){const n=Object.values(cart).reduce((s,x)=>s+x,0);return n?`<button class="btn" style="margin-bottom:10px" onclick="tab='cart';render()">Keranjang (${n} item) · Checkout</button>`:''}
@@ -181,7 +143,7 @@ grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width=
 chev:'<path d="M9 18l6-6-6-6"/>'};
 const ic=(n,s=24)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
 const fmtLong=d=>`${+d.slice(8)} ${MN[+d.slice(5,7)-1]} ${d.slice(0,4)}`;
-function go(t){tab=t;modal='';render();window.scrollTo(0,0)}
+
 
 function login(){
  $(`<div class="lg"><img class="logo" src="${LOGO}" alt="SkyConnect Technology">
@@ -190,7 +152,7 @@ function login(){
  <div id="err" class="mut" style="color:var(--warn);margin-bottom:8px"></div>
  <button class="btn" onclick="doLogin()">Masuk</button>
  <button class="chip" style="margin-top:10px" onclick="forgot()">Lupa sandi?</button></div>
- <div class="lgb"><button class="btn ghost" onclick="guest=true;tab='gh';render()">Lihat daftar harga</button><button class="btn ghost" onclick="guest=true;tab='reg';render()">Daftar jadi pelanggan</button></div></div>`);
+ <div class="lgb"><button class="btn ghost" onclick="openGuest('gh')">Lihat daftar harga</button><button class="btn ghost" onclick="openGuest('reg')">Daftar jadi pelanggan</button></div></div>`);
  pin.onkeydown=e=>{if(e.key==='Enter')doLogin()};
 }
 
@@ -239,13 +201,143 @@ function trxView(){const c=cust(),A=[];db.sal.forEach((x,i)=>{if(x.id===c.id)A.p
 
 function qrisModal(){const c=cust();return `<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:90vh;overflow:auto"><h3>Scan QRIS</h3>${db.qris?`<img src="${db.qris}" alt="QRIS SkyConnect" style="width:100%;max-width:300px;display:block;margin:10px auto;border-radius:12px"><p class="mut">Scan dari m-banking atau e-wallet, lalu kirim bukti bayar ke CS.</p><button class="btn" onclick="sendWA(['*KONFIRMASI QRIS - SkyConnect*','ID Pelanggan: ${c.id}','Nama: ${esc(c.name)}','Tanggal: '+fd(today()),'Bukti pembayaran saya lampirkan di chat ini.'].join('\\n'),'')">Kirim bukti via WhatsApp</button>`:'<div class="alert" style="margin-top:10px">QRIS belum diatur admin.</div>'}</div></div>`}
 function tfModal(){const c=cust(),has=!!c.pin;modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:90vh;overflow:auto"><h3>Transfer saldo</h3><p class="mut">Saldo Anda ${rp(c.saldo||0)}</p><label for="tid">ID pelanggan tujuan</label><input id="tid" autocapitalize="characters"><label for="tnm">Nominal</label><input id="tnm" type="number" inputmode="numeric"><label for="pk1">${has?'PIN transaksi':'Buat PIN 6 angka'}</label><input id="pk1" type="password" inputmode="numeric" maxlength="6">${has?'':'<input id="pk2" type="password" inputmode="numeric" maxlength="6" placeholder="Ulangi PIN">'}<div id="pkm" class="mut" style="color:var(--warn);margin-bottom:8px"></div><button class="btn" onclick="doTf()">Kirim saldo</button></div></div>`;render()}
-function doTf(){const c=cust(),to=db.customers.find(x=>x.id===tid.value.trim().toUpperCase()),v=Number(tnm.value),p=pk1.value;if(!to||to.id===c.id){pkm.textContent='ID tujuan tidak ditemukan.';return}if(!(v>0)||v>(c.saldo||0)){pkm.textContent='Nominal tidak valid atau saldo kurang.';return}if(!/^\d{6}$/.test(p)){pkm.textContent='PIN harus 6 angka.';return}if(c.pin){if(p!==c.pin){pkm.textContent='PIN salah.';return}}else{if(p!==pk2.value){pkm.textContent='PIN tidak sama.';return}c.pin=p}c.saldo-=v;to.saldo=(to.saldo||0)+v;logSal(c,-v,'Transfer ke '+to.id);logSal(to,v,'Transfer dari '+c.id);save();modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Transfer berhasil</h3><p class="mut">${rp(v)} terkirim ke ${to.id}. Saldo Anda ${rp(c.saldo)}.</p><button class="btn">Tutup</button></div></div>`;render()}
 
-function qrisBox(){return `<h2>QRIS</h2><div class="card">${db.qris?`<img src="${db.qris}" alt="QRIS" style="width:100%;max-width:240px;display:block;margin-bottom:10px;border-radius:10px">`:'<p class="mut">Belum ada gambar QRIS.</p>'}<label for="qf">Unggah gambar QRIS (maks. 1 MB)</label><input id="qf" type="file" accept="image/*" onchange="upQris(this)"><div id="qm" class="mut" style="color:var(--warn);margin-bottom:8px"></div>${db.qris?`<button class="btn alt sm" onclick="db.qris='';save();render()">Hapus QRIS</button>`:''}</div>`}
-function upQris(i){const f=i.files[0];if(!f)return;if(f.size>1048576){qm.textContent='Ukuran gambar maksimal 1 MB.';return}const r=new FileReader();r.onload=()=>{db.qris=r.result;save();render()};r.readAsDataURL(f)}
+
+function qrisBox(){return `<h2>QRIS</h2><div class="card">${db.qris?`<img src="${db.qris}" alt="QRIS" style="width:100%;max-width:240px;display:block;margin-bottom:10px;border-radius:10px">`:'<p class="mut">Belum ada gambar QRIS.</p>'}<label for="qf">Unggah gambar QRIS (maks. 1 MB)</label><input id="qf" type="file" accept="image/*" onchange="upQris(this)"><div id="qm" class="mut" style="color:var(--warn);margin-bottom:8px"></div>${db.qris?`<button class="btn alt sm" onclick="db.qris='';cfgSet('qris',1)">Hapus QRIS</button>`:''}</div>`}
+
 function newsBox(){const P=db.promo;return `<h2>Promo di beranda</h2><div class="card"><label for="pr1">Judul</label><input id="pr1" value="${esc(P.a)}"><label for="pr2">Highlight</label><input id="pr2" value="${esc(P.b)}"><label for="pr3">Keterangan</label><input id="pr3" value="${esc(P.c)}"><div id="prm" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="savePromo()">Simpan promo</button></div><h2>Pengumuman</h2>${db.news.map((n,i)=>`<div class="card"><div class="row"><b>${esc(n.t)}</b><button class="btn alt sm" onclick="delNews(${i})">Hapus</button></div><div class="mut">${esc(n.b)}</div></div>`).join('')}<div class="card"><label for="nt">Judul pengumuman</label><input id="nt"><label for="nb">Isi</label><input id="nb"><button class="btn" onclick="addNews()">Kirim pengumuman</button></div>`}
-function savePromo(){db.promo={a:pr1.value.trim(),b:pr2.value.trim(),c:pr3.value.trim()};save();prm.textContent='Promo tersimpan.'}
-function addNews(){if(!nt.value.trim())return;db.news.push({t:nt.value.trim(),b:nb.value.trim(),d:today()});save();render()}
-function delNews(i){db.news.splice(i,1);save();render()}
 
-login();
+
+
+
+/* ===== Lapisan server (Supabase) ===== */
+const CFG=window.SKY_CONFIG||{};
+let TOKEN='',ROLE='',MYID='';
+const ERR={AUTH:'Sesi habis. Silakan masuk lagi.',FORBIDDEN:'Akses ditolak.',INVALID:'Data tidak valid.',SALDO:'Saldo tidak cukup.',PIN:'PIN salah.',PINFMT:'PIN harus 6 angka.',PAID:'Tagihan sudah lunas.',NOTO:'ID tidak ditemukan.',OLDPW:'Sandi lama salah.',FULL:'Pendaftaran sedang penuh, hubungi CS.'};
+const msg=e=>ERR[e.message]||'Gagal terhubung ke server. Periksa internet Anda.';
+function toast(t){let e=document.getElementById('toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','status');e.style.cssText='position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#0B1F44;color:#fff;padding:12px 18px;border-radius:99px;z-index:20;max-width:90%;text-align:center;font-weight:600;font-size:14px';document.body.appendChild(e)}e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2800)}
+async function rpc(fn,args){
+ const h={'Content-Type':'application/json',apikey:CFG.key};
+ if(CFG.key.startsWith('eyJ'))h.Authorization='Bearer '+CFG.key;
+ const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args||{})});
+ const j=await r.json().catch(()=>null);
+ if(!r.ok)throw new Error((j&&j.message)||'NET');
+ return j;
+}
+async function sync(){const s=await rpc('get_state',{p_token:TOKEN});Object.assign(db,s.cfg,{customers:s.customers,pay:s.pay,sal:s.sal,reg:s.reg});ROLE=s.role;MYID=s.id}
+function fail(e){if(e.message==='AUTH')logout();toast(msg(e))}
+async function act(fn,args,ok){try{await rpc(fn,Object.assign({p_token:TOKEN},args));await sync();if(ok)ok();render()}catch(e){fail(e)}}
+async function cfgSet(k,rr){try{await rpc('a_cfg',{p_token:TOKEN,p_k:k,p_v:db[k]});toast('Tersimpan.');if(rr)render()}catch(e){fail(e)}}
+async function refresh(){if(!TOKEN||guest)return;try{await sync();const a=document.activeElement;if(!modal&&!(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName)))render()}catch(e){if(e.message==='AUTH')logout()}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+setInterval(refresh,45000);
+function go(t){tab=t;modal='';render();window.scrollTo(0,0);refresh()}
+
+async function enter(){await sync();admin=ROLE!=='cust';sup=ROLE==='super';guest=false;me=admin?null:MYID;tab=admin?'adm':'home';render()}
+async function boot(){
+ if(!CFG.url||!CFG.key){$('<div class="pg"><div class="alert">Aplikasi belum dikonfigurasi. Isi file config.js dengan URL dan kunci Supabase.</div></div>');return}
+ try{Object.assign(db,await rpc('public_state'))}catch(e){}
+ let t='';try{t=localStorage.getItem('sky_t')||''}catch(e){}
+ if(t){TOKEN=t;try{await enter();return}catch(e){TOKEN=''}}
+ login();
+}
+async function doLogin(){
+ const v=uid.value.trim(),p=pin.value;
+ if(!v||!p){err.textContent='Isi ID dan sandi.';return}
+ err.textContent='Memeriksa...';
+ try{
+  const r=await rpc('login',{p_id:v,p_pw:p});
+  if(r.error){err.textContent=r.error==='LOCK'?'Terlalu banyak percobaan. Coba lagi 15 menit lagi.':'ID atau sandi salah. Ketuk Lupa sandi untuk meminta reset.';return}
+  TOKEN=r.token;try{localStorage.setItem('sky_t',TOKEN)}catch(e){}
+  await enter();
+ }catch(e){err.textContent=msg(e)}
+}
+function logout(){
+ if(TOKEN)rpc('logout',{p_token:TOKEN}).catch(()=>{});
+ TOKEN='';ROLE='';me=null;admin=false;sup=false;guest=false;cart={};modal='';
+ Object.assign(db,{customers:[],pay:[],sal:[],reg:[]});
+ try{localStorage.removeItem('sky_t')}catch(e){}
+ login();
+}
+function forgot(){const id=uid.value.trim().toUpperCase();if(!id){err.textContent='Isi ID Pengguna WiFi Anda dulu.';return}sendWA(['*RESET SANDI - SkyConnect*','ID Pelanggan: '+id,'Mohon reset sandi akun saya.'].join('\n'),'err')}
+async function openGuest(t){guest=true;tab=t;try{Object.assign(db,await rpc('public_state'))}catch(e){}render()}
+
+/* pelanggan */
+function saveProf(){if(!pn.value.trim()){toast('Nama tidak boleh kosong.');return}act('c_profile',{p_name:pn.value,p_phone:pp.value,p_addr:pa.value},()=>toast('Data tersimpan.'))}
+function savePw(){if(sn.value.length<6){toast('Sandi baru minimal 6 karakter.');return}act('c_pw',{p_old:so.value,p_new:sn.value},()=>toast('Sandi berhasil diubah.'))}
+function savePinNew(){if(!/^\d{6}$/.test(pnn.value)){toast('PIN baru harus 6 angka.');return}act('c_pin',{p_old:po.value,p_new:pnn.value},()=>toast('PIN berhasil diubah.'))}
+function togAdd(id,on){act('c_addon',{p_aid:id,p_on:on})}
+function checkPin(){
+ const c=cust(),v=pk1.value;
+ if(!/^\d{6}$/.test(v)){pkm.textContent='PIN harus 6 angka.';return}
+ if(!c.pin&&v!==pk2.value){pkm.textContent='PIN tidak sama.';return}
+ act('c_paysaldo',{p_pin:v},()=>{modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Pembayaran berhasil</h3><p class="mut">Tagihan lunas via saldo. Layanan Anda aktif.</p><button class="btn">Tutup</button></div></div>`});
+}
+function doTf(){
+ const c=cust(),v=Number(tnm.value),p=pk1.value,to=tid.value.trim().toUpperCase();
+ if(!to||!(v>0)){pkm.textContent='Isi ID tujuan dan nominal.';return}
+ if(v>(c.saldo||0)){pkm.textContent='Saldo kurang.';return}
+ if(!/^\d{6}$/.test(p)){pkm.textContent='PIN harus 6 angka.';return}
+ if(!c.pin&&p!==pk2.value){pkm.textContent='PIN tidak sama.';return}
+ act('c_transfer',{p_to:to,p_amt:v,p_pin:p},()=>{modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Transfer berhasil</h3><p class="mut">${rp(v)} terkirim ke ${esc(to)}. Saldo Anda ${rp(cust().saldo||0)}.</p><button class="btn">Tutup</button></div></div>`});
+}
+async function sendReg(){
+ if(!rgn.value.trim()||nz(rgw.value).length<9||!rga.value.trim()||rgp.value.length<6){rgmsg.textContent='Isi nama, nomor WhatsApp, alamat, dan sandi (min. 6 karakter).';return}
+ rgmsg.textContent='Mengirim...';
+ const d={p_name:rgn.value.trim(),p_phone:rgw.value.trim(),p_addr:rga.value.trim(),p_paket:rgk.value,p_pw:rgp.value};
+ try{await rpc('register',d);lastReg={name:d.p_name,paket:d.p_paket,addr:d.p_addr};tab='regok';render()}catch(e){rgmsg.textContent=msg(e)}
+}
+
+/* admin */
+function markPaid(id){act('a_paid',{p_cid:id,p_v:true})}
+function unpaid(id){act('a_paid',{p_cid:id,p_v:false})}
+function iso(id,v){act('a_iso',{p_cid:id,p_v:v})}
+function saveCust(id){act('a_cust',{p_cid:id,p_name:en.value,p_paket:ep.value,p_harga:Number(eh.value)||0,p_due:ed.value,p_paid:es.value==='1'},()=>{modal=''})}
+async function newCust(){
+ try{const r=await rpc('a_newcust',{p_token:TOKEN});await sync();
+  modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet"><h3>Pelanggan dibuat</h3><p class="mut">ID: <b>${r.id}</b><br>Sandi sementara: <b>${r.pw}</b></p><p class="mut">Catat dan berikan ke pelanggan, lalu lengkapi datanya.</p><button class="btn" onclick="editCust('${r.id}')">Ubah data</button></div></div>`;render()}
+ catch(e){fail(e)}
+}
+function adjSaldo(id,s){const v=Number(sa.value);if(!(v>0)){sm.textContent='Isi nominal lebih dari 0.';return}act('a_saldo',{p_cid:id,p_amt:s*v,p_note:sno.value.trim(),p_income:s>0&&sci.checked},()=>{modal=''})}
+async function resetPw(id){
+ try{const t=await rpc('a_resetpw',{p_token:TOKEN,p_cid:id});const c=db.customers.find(x=>x.id===id);
+  const m2='Halo '+c.name+', sandi SkyConnect Anda sudah direset. Sandi sementara: '+t+'. Segera ganti di menu Profil.';
+  modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Sandi direset</h3><p class="mut">Sandi sementara ${esc(c.name)}: <b>${t}</b></p>${c.phone?`<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${nz(c.phone)}?text=${encodeURIComponent(m2)}">Kirim via WhatsApp</a>`:'<p class="mut">No. WhatsApp pelanggan belum diisi.</p>'}</div></div>`;render()}
+ catch(e){fail(e)}
+}
+function resetPin(id){act('a_resetpin',{p_cid:id},()=>{const c=db.customers.find(x=>x.id===id);modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>PIN direset</h3><p class="mut">${esc(c.name)} akan diminta membuat PIN baru saat bayar pakai saldo.</p><button class="btn">Tutup</button></div></div>`})}
+function delAdd(id){db.addons=db.addons.filter(a=>a.id!==id);cfgSet('addons',1)}
+function editPrice(id,v){db.addons.find(a=>a.id===id).price=Number(v)||0;cfgSet('addons')}
+function newAdd(){if(!nn.value.trim())return;db.addons.push({id:'a'+Date.now(),name:nn.value.trim(),desc:nd.value.trim(),price:Number(np.value)||0});cfgSet('addons',1)}
+function delPlan(i){db.plans.splice(i,1);cfgSet('plans',1)}
+function addPlan(){if(!pln.value.trim())return;db.plans.push({n:pln.value.trim(),p:Number(plp.value)||0,d:''});cfgSet('plans',1)}
+function saveCS(){db.cs={wa:cw.value.replace(/\D/g,'').replace(/^0/,'62'),jam:cj.value.trim()};cfgSet('cs');cmsg.textContent=db.cs.wa?'Nomor aktif: +'+db.cs.wa:'Nomor dikosongkan.'}
+function savePromo(){db.promo={a:pr1.value.trim(),b:pr2.value.trim(),c:pr3.value.trim()};cfgSet('promo');prm.textContent='Promo tersimpan.'}
+function addNews(){if(!nt.value.trim())return;db.news.push({t:nt.value.trim(),b:nb.value.trim(),d:today()});cfgSet('news',1)}
+function delNews(i){db.news.splice(i,1);cfgSet('news',1)}
+
+/* super admin */
+function addRek(){if(!rb.value.trim()||!rno.value.trim())return;db.rek.push({bank:rb.value.trim(),no:rno.value.trim(),an:ran.value.trim()});cfgSet('rek',1)}
+function delRek(i){db.rek.splice(i,1);cfgSet('rek',1)}
+function upQris(i){
+ const f=i.files[0];if(!f)return;const im=new Image();
+ im.onload=()=>{const k=Math.min(1,700/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);db.qris=c.toDataURL('image/jpeg',.9);cfgSet('qris',1)};
+ im.onerror=()=>{qm.textContent='File gambar tidak valid.'};
+ im.src=URL.createObjectURL(f);
+}
+async function saveAuth(){
+ const a=apA.value.trim(),s=apS.value.trim();
+ if((a&&a.length<6)||(s&&s.length<6)){amsg.textContent='Minimal 6 karakter.';return}
+ try{if(a)await rpc('s_staffpw',{p_token:TOKEN,p_who:'ADMIN',p_new:a});if(s)await rpc('s_staffpw',{p_token:TOKEN,p_who:'SUPER',p_new:s});apA.value='';apS.value='';amsg.textContent='Tersimpan.'}
+ catch(e){fail(e)}
+}
+async function approve(rid){
+ const r=db.reg.find(x=>x.id===rid);
+ try{const id=await rpc('s_approve',{p_token:TOKEN,p_rid:rid});await sync();
+  const m2='Halo '+r.name+', pendaftaran SkyConnect Anda disetujui. ID Pengguna WiFi Anda: '+id+'. Masuk dengan ID ini dan sandi yang Anda buat saat mendaftar.';
+  modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Pelanggan dibuat: ${id}</h3><p class="mut">${esc(r.name)} sudah masuk daftar pelanggan.</p><a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${nz(r.phone)}?text=${encodeURIComponent(m2)}">Kirim ID via WhatsApp</a></div></div>`;render()}
+ catch(e){fail(e)}
+}
+function rejectReg(id){act('s_reject',{p_rid:id})}
+
+boot();
