@@ -214,12 +214,12 @@ function newsBox(){const P=db.promo;return `<h2>Promo di beranda</h2><div class=
 const CFG=window.SKY_CONFIG||{};
 let TOKEN='',ROLE='',MYID='';
 const ERR={AUTH:'Sesi habis. Silakan masuk lagi.',FORBIDDEN:'Akses ditolak.',INVALID:'Data tidak valid.',SALDO:'Saldo tidak cukup.',PIN:'PIN salah.',PINFMT:'PIN harus 6 angka.',PAID:'Tagihan sudah lunas.',NOTO:'ID tidak ditemukan.',OLDPW:'Sandi lama salah.',FULL:'Pendaftaran sedang penuh, hubungi CS.'};
-const msg=e=>ERR[e.message]||'Gagal terhubung ke server. Periksa internet Anda.';
+const msg=e=>ERR[e.message]||(e.message==='NET'?'Gagal terhubung ke server. Periksa internet dan config.js.':'Kesalahan server: '+e.message);
 function toast(t){let e=document.getElementById('toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','status');e.style.cssText='position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#0B1F44;color:#fff;padding:12px 18px;border-radius:99px;z-index:20;max-width:90%;text-align:center;font-weight:600;font-size:14px';document.body.appendChild(e)}e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2800)}
 async function rpc(fn,args){
- const h={'Content-Type':'application/json',apikey:CFG.key};
+ const h={'Content-Type':'application/json',apikey:CFG.key.trim()};
  if(CFG.key.startsWith('eyJ'))h.Authorization='Bearer '+CFG.key;
- const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args||{})});
+ let r;try{r=await fetch(CFG.url.trim().replace(/\/+$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args||{})})}catch(x){throw new Error('NET')}
  const j=await r.json().catch(()=>null);
  if(!r.ok)throw new Error((j&&j.message)||'NET');
  return j;
