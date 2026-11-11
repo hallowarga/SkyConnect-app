@@ -18,7 +18,7 @@ jobs:
       - name: Siapkan proyek Android
         run: |
           mkdir www
-          cp index.html style.css app.js manifest.webmanifest sw.js logo.png mark.png icon-192.png icon-512.png www/
+          cp *.html *.css *.js *.png *.webmanifest www/
           npm init -y
           npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           npx cap init SkyConnect id.skyconnect.app --web-dir www
