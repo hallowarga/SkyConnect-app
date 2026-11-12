@@ -52,7 +52,7 @@ function catalog(){if(admin)return catalogEdit();
 function adminView(){
  return `${regNote()}${custHead()}<p class="mut">Belum bayar tampil di atas. Nyalakan isolir untuk memutus layanan yang menunggak.</p>
  ${custList().map(c=>`<div class="card"><div class="row"><div><b>${esc(c.name)}</b><div class="mut">${c.id} · ${c.paid?'Lunas':'Belum bayar '+rp(total(c))}</div></div>
- <div style="text-align:center"><label class="sw danger"><input type="checkbox" aria-label="Isolir ${esc(c.name)}" ${c.iso?'checked':''} onchange="iso('${c.id}',this.checked)"><span></span></label><div class="mut" style="font-size:11px">Isolir</div></div></div><div class="mut" style="margin-top:6px">${esc(c.paket)} · ${rp(c.harga)} · jatuh tempo ${fd(c.due)}</div><div class="row" style="margin-top:10px;justify-content:flex-start">${c.paid?`<span class="pill ok">Lunas</span><button class="btn alt sm" onclick="unpaid('${c.id}')">Batalkan</button>`:`<button class="btn sm" onclick="markPaid('${c.id}')">Tandai lunas</button>${remindBtn(c)}`}<button class="btn alt sm" onclick="editCust('${c.id}')">Ubah data</button></div><div class="row" style="margin-top:8px;justify-content:flex-start;flex-wrap:wrap"><button class="btn alt sm" onclick="saldoModal('${c.id}')">Saldo ${rp(c.saldo||0)}</button><button class="btn alt sm" onclick="resetPw('${c.id}')">Reset sandi</button><button class="btn alt sm" onclick="resetPin('${c.id}')">Reset PIN</button>${sup?`<button class="btn alt sm" onclick="delCustModal('${c.id}')">Hapus akun</button>`:''}</div></div>`).join('')}<button class="btn" style="margin-bottom:10px" onclick="newCust()">+ Pelanggan baru</button>
+ <div style="text-align:center;flex:none;min-width:58px"><label class="sw danger"><input type="checkbox" aria-label="Isolir ${esc(c.name)}" ${c.iso?'checked':''} onchange="iso('${c.id}',this.checked)"><span></span></label><div class="mut" style="font-size:11px">Isolir</div></div></div><div class="mut" style="margin-top:6px">${esc(c.paket)} · ${rp(c.harga)} · jatuh tempo ${fd(c.due)}</div><div class="row" style="margin-top:10px;justify-content:flex-start">${c.paid?`<span class="pill ok">Lunas</span><button class="btn alt sm" onclick="unpaid('${c.id}')">Batalkan</button>`:`<button class="btn sm" onclick="markPaid('${c.id}')">Tandai lunas</button>${remindBtn(c)}`}<button class="btn alt sm" onclick="editCust('${c.id}')">Ubah data</button></div><div class="row" style="margin-top:8px;justify-content:flex-start;flex-wrap:wrap"><button class="btn alt sm" onclick="saldoModal('${c.id}')">Saldo ${rp(c.saldo||0)}</button><button class="btn alt sm" onclick="resetPw('${c.id}')">Reset sandi</button><button class="btn alt sm" onclick="resetPin('${c.id}')">Reset PIN</button>${sup?`<button class="btn alt sm" onclick="delCustModal('${c.id}')">Hapus akun</button>`:''}</div></div>`).join('')}<button class="btn" style="margin-bottom:10px" onclick="newCust()">+ Pelanggan baru</button>
  <h2>Kelola add-on</h2>
  ${db.addons.map(a=>`<div class="card"><div class="row"><b>${esc(a.name)}</b><button class="btn alt sm" onclick="delAdd('${a.id}')">Hapus</button></div>
  <label>Harga per bulan</label><input type="number" value="${a.price}" onchange="editPrice('${a.id}',this.value)"></div>`).join('')}
@@ -72,9 +72,9 @@ function profile(){const c=cust();return `<h2>Profil saya</h2><div class="card">
 
 function rekap(){const P=db.pay.filter(x=>!x.noinc).sort((a,b)=>b.date.localeCompare(a.date));const m=today().slice(0,7);const sum=a=>a.reduce((s,x)=>s+x.amount,0);const mon=P.filter(x=>x.date.startsWith(m));const by={};P.forEach(x=>{const k=x.date.slice(0,7);by[k]=(by[k]||0)+x.amount});const bl=db.customers.filter(c=>!c.paid);
 return `<h2>Rekap pemasukan</h2><div class="hero"><small>Pemasukan bulan ini</small><div class="big">${rp(sum(mon))}</div><small>${mon.length} pembayaran. Belum masuk ${rp(bl.reduce((s,c)=>s+total(c),0))} dari ${bl.length} pelanggan.</small></div><div class="card"><b>Per bulan</b>${Object.keys(by).sort().reverse().map(k=>`<div class="row mut" style="margin-top:6px"><span>${MN[+k.slice(5)-1]} ${k.slice(0,4)}</span><b style="color:var(--ink)">${rp(by[k])}</b></div>`).join('')}</div><div class="card"><b>Riwayat pembayaran</b>${P.map(x=>`<div class="row" style="margin-top:8px"><div>${esc(x.name)}<div class="mut">${fd(x.date)} · ${esc(x.method)}</div></div><b>${rp(x.amount)}</b></div>`).join('')||'<p class="mut">Belum ada pembayaran.</p>'}</div>`}
-function settings(){return newsBox()+planBox()+`<h2>Pengaturan CS</h2><div class="card"><label for="cw">Nomor WhatsApp CS (format 628xxx)</label><input id="cw" type="tel" value="${esc(db.cs.wa)}" placeholder="6281234567890"><label for="cj">Jam layanan</label><input id="cj" value="${esc(db.cs.jam||'')}"><div id="cmsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveCS()">Simpan</button></div>`}
+function settings(){return newsBox()+planBox()+`<h2>Pengaturan CS</h2><div class="card"><label for="cw">Nomor WhatsApp CS (format 628xxx)</label><input id="cw" type="tel" value="${esc(db.cs.wa)}" placeholder="6281234567890"><label for="cj">Jam layanan</label><input id="cj" value="${esc(db.cs.jam||'')}"><label class="row" style="justify-content:flex-start;margin-bottom:8px"><input id="cbz" type="checkbox" style="width:auto;margin:0" ${db.cs.biz!==false?'checked':''}> Pakai WhatsApp Business untuk pesan ke pelanggan (Android, lewat Chrome)</label><div id="cmsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveCS()">Simpan</button></div>`}
 
-function editCust(id){const c=db.customers.find(x=>x.id===id);modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:90vh;overflow:auto"><h3>Ubah ${c.id}</h3><label for="en">Nama</label><input id="en" value="${esc(c.name)}"><label for="ep">Paket</label><input id="ep" value="${esc(c.paket)}"><label for="eh">Harga paket per bulan</label><input id="eh" type="number" value="${c.harga}"><label for="ed">Tanggal jatuh tempo</label><input id="ed" type="date" value="${c.due}"><label for="es">Status tagihan</label><select id="es"><option value="0" ${c.paid?'':'selected'}>Belum bayar</option><option value="1" ${c.paid?'selected':''}>Lunas</option></select><button class="btn" onclick="saveCust('${id}')">Simpan</button></div></div>`;render()}
+function editCust(id){const c=db.customers.find(x=>x.id===id);modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:90vh;overflow:auto"><h3>Ubah ${c.id}</h3><label for="en">Nama</label><input id="en" value="${esc(c.name)}"><label for="ep">Paket</label><input id="ep" value="${esc(c.paket)}"><label for="eh">Harga paket per bulan</label><input id="eh" type="number" value="${c.harga}"><label for="ed">Tanggal jatuh tempo</label><input id="ed" type="date" value="${c.due}"><label for="eph">No. WhatsApp pelanggan</label><input id="eph" type="tel" value="${esc(c.phone||'')}"><label for="eadr">Alamat</label><input id="eadr" value="${esc(c.addr||'')}"><label for="es">Status tagihan</label><select id="es"><option value="0" ${c.paid?'':'selected'}>Belum bayar</option><option value="1" ${c.paid?'selected':''}>Lunas</option></select><button class="btn" onclick="saveCust('${id}')">Simpan</button></div></div>`;render()}
 
 
 const nz=p=>p.replace(/\D/g,'').replace(/^0/,'62');
@@ -292,7 +292,7 @@ async function sendReg(){
 function markPaid(id){act('a_paid',{p_cid:id,p_v:true})}
 function unpaid(id){act('a_paid',{p_cid:id,p_v:false})}
 function iso(id,v){act('a_iso',{p_cid:id,p_v:v})}
-function saveCust(id){act('a_cust',{p_cid:id,p_name:en.value,p_paket:ep.value,p_harga:Number(eh.value)||0,p_due:ed.value,p_paid:es.value==='1'},()=>{modal=''})}
+
 async function newCust(){
  try{const r=await rpc('a_newcust',{p_token:TOKEN});await sync();
   modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet"><h3>Pelanggan dibuat</h3><p class="mut">ID: <b>${r.id}</b><br>Sandi sementara: <b>${r.pw}</b></p><p class="mut">Catat dan berikan ke pelanggan, lalu lengkapi datanya.</p><button class="btn" onclick="editCust('${r.id}')">Ubah data</button></div></div>`;render()}
@@ -302,7 +302,7 @@ function adjSaldo(id,s){const v=Number(sa.value);if(!(v>0)){sm.textContent='Isi 
 async function resetPw(id){
  try{const t=await rpc('a_resetpw',{p_token:TOKEN,p_cid:id});const c=db.customers.find(x=>x.id===id);
   const m2='Halo '+c.name+', sandi SkyConnect Anda sudah direset. Sandi sementara: '+t+'. Segera ganti di menu Profil.';
-  modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Sandi direset</h3><p class="mut">Sandi sementara ${esc(c.name)}: <b>${t}</b></p>${c.phone?`<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${nz(c.phone)}?text=${encodeURIComponent(m2)}">Kirim via WhatsApp</a>`:'<p class="mut">No. WhatsApp pelanggan belum diisi.</p>'}</div></div>`;render()}
+  modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Sandi direset</h3><p class="mut">Sandi sementara ${esc(c.name)}: <b>${t}</b></p>${c.phone?`<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waBiz(c.phone,m2)}">Kirim via WhatsApp</a>`:'<p class="mut">No. WhatsApp pelanggan belum diisi.</p>'}</div></div>`;render()}
  catch(e){fail(e)}
 }
 function resetPin(id){act('a_resetpin',{p_cid:id},()=>{const c=db.customers.find(x=>x.id===id);modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>PIN direset</h3><p class="mut">${esc(c.name)} akan diminta membuat PIN baru saat bayar pakai saldo.</p><button class="btn">Tutup</button></div></div>`})}
@@ -311,7 +311,7 @@ function editPrice(id,v){db.addons.find(a=>a.id===id).price=Number(v)||0;cfgSet(
 function newAdd(){if(!nn.value.trim())return;db.addons.push({id:'a'+Date.now(),name:nn.value.trim(),desc:nd.value.trim(),price:Number(np.value)||0});cfgSet('addons',1)}
 function delPlan(i){db.plans.splice(i,1);cfgSet('plans',1)}
 function addPlan(){if(!pln.value.trim())return;db.plans.push({n:pln.value.trim(),p:Number(plp.value)||0,d:''});cfgSet('plans',1)}
-function saveCS(){db.cs={wa:cw.value.replace(/\D/g,'').replace(/^0/,'62'),jam:cj.value.trim()};cfgSet('cs');cmsg.textContent=db.cs.wa?'Nomor aktif: +'+db.cs.wa:'Nomor dikosongkan.'}
+function saveCS(){db.cs={wa:cw.value.replace(/\D/g,'').replace(/^0/,'62'),jam:cj.value.trim(),biz:cbz.checked};cfgSet('cs');cmsg.textContent=db.cs.wa?'Nomor aktif: +'+db.cs.wa:'Nomor dikosongkan.'}
 function savePromo(){db.promo={a:pr1.value.trim(),b:pr2.value.trim(),c:pr3.value.trim()};cfgSet('promo');prm.textContent='Promo tersimpan.'}
 function addNews(){if(!nt.value.trim())return;db.news.push({t:nt.value.trim(),b:nb.value.trim(),d:today()});cfgSet('news',1)}
 function delNews(i){db.news.splice(i,1);cfgSet('news',1)}
@@ -335,7 +335,7 @@ async function approve(rid){
  const r=db.reg.find(x=>x.id===rid);
  try{const id=await rpc('s_approve',{p_token:TOKEN,p_rid:rid});await sync();
   const m2='Halo '+r.name+', pendaftaran SkyConnect Anda disetujui. ID Pengguna WiFi Anda: '+id+'. Masuk dengan ID ini dan sandi yang Anda buat saat mendaftar.';
-  modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Pelanggan dibuat: ${id}</h3><p class="mut">${esc(r.name)} sudah masuk daftar pelanggan.</p><a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${nz(r.phone)}?text=${encodeURIComponent(m2)}">Kirim ID via WhatsApp</a></div></div>`;render()}
+  modal=`<div class="modal" onclick="modal='';render()"><div class="sheet"><h3>Pelanggan dibuat: ${id}</h3><p class="mut">${esc(r.name)} sudah masuk daftar pelanggan.</p><a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waBiz(r.phone,m2)}">Kirim ID via WhatsApp</a></div></div>`;render()}
  catch(e){fail(e)}
 }
 function rejectReg(id){act('s_reject',{p_rid:id})}
@@ -382,11 +382,24 @@ function remindMsg(c){
  return ['*PENGINGAT TAGIHAN - SkyConnect*','Halo '+c.name+',','Tagihan internet Anda:','ID Pelanggan: '+c.id,'Paket: '+c.paket,'Total: '+rp(total(c)),'Jatuh tempo: '+fd(c.due)+' ('+st+')','','Pembayaran bisa lewat transfer atau saldo di aplikasi'+(L?': '+L:'.'),'Abaikan pesan ini jika sudah membayar. Terima kasih.'].join('\n');
 }
 function remindBtn(c){
- return c.phone?`<a class="btn alt sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${nz(c.phone)}?text=${encodeURIComponent(remindMsg(c))}">Ingatkan</a>`:`<button class="btn alt sm" onclick="toast('No. WhatsApp pelanggan belum diisi.')">Ingatkan</button>`;
+ return c.phone?`<a class="btn alt sm" style="text-decoration:none" target="_blank" rel="noopener" href="${waBiz(c.phone,remindMsg(c))}">Ingatkan</a>`:`<button class="btn alt sm" onclick="toast('No. WhatsApp pelanggan belum diisi.')">Ingatkan</button>`;
 }
 function remindAll(){
  const L=db.customers.filter(c=>!c.paid).sort((a,b)=>a.due.localeCompare(b.due));
  modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:85vh;overflow:auto"><h3>Ingatkan tagihan (${L.length})</h3><p class="mut">Ketuk Ingatkan satu per satu. WhatsApp terbuka dengan pesan siap kirim.</p>${L.map(c=>`<div class="row" style="margin-bottom:10px"><div><b>${esc(c.name)}</b><div class="mut">${c.id} · ${rp(total(c))} · ${fd(c.due)}${late(c)?' · lewat':''}</div></div>${remindBtn(c)}</div>`).join('')||'<p class="mut">Semua tagihan sudah lunas.</p>'}</div></div>`;render();
+}
+
+function waBiz(p,m){
+ const n=nz(p),u='https://wa.me/'+n+'?text='+encodeURIComponent(m),ua=navigator.userAgent;
+ if(db.cs.biz===false||!/Android/i.test(ua)||/; wv\)/.test(ua))return u;
+ return 'intent://send?phone='+n+'&text='+encodeURIComponent(m)+'#Intent;scheme=whatsapp;package=com.whatsapp.w4b;S.browser_fallback_url='+encodeURIComponent(u)+';end';
+}
+async function saveCust(id){
+ try{
+  await rpc('a_cust',{p_token:TOKEN,p_cid:id,p_name:en.value,p_paket:ep.value,p_harga:Number(eh.value)||0,p_due:ed.value,p_paid:es.value==='1'});
+  await rpc('a_contact',{p_token:TOKEN,p_cid:id,p_phone:eph.value.trim(),p_addr:eadr.value.trim()});
+  await sync();modal='';render();toast('Data tersimpan.');
+ }catch(e){fail(e)}
 }
 
 boot();

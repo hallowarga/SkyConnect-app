@@ -71,9 +71,9 @@ nav .fab{position:absolute;left:50%;top:-30px;margin-left:-32px;width:64px;heigh
 .lg .logo{width:min(62vw,250px);border-radius:28px;margin-bottom:18px;box-shadow:0 12px 40px rgba(30,107,255,.45)}
 .lgc{width:100%}.lgb{width:100%;display:grid;gap:8px;margin-top:6px}
 /* komponen */
-.sw{position:relative;width:46px;height:26px;flex:none}
+.sw{position:relative;display:inline-block;vertical-align:middle;width:46px;height:26px;flex:none}
 .sw input{opacity:0;width:100%;height:100%;margin:0;position:absolute;cursor:pointer;z-index:1}
-.sw span{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:.2s}
+.sw span{position:absolute;inset:0;background:#B4C3DA;border-radius:99px;transition:.2s}
 .sw span:after{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
 .sw input:checked+span{background:var(--pri)}.sw input:checked+span:after{left:23px}
 .sw.danger input:checked+span{background:var(--warn)}
