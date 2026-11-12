@@ -219,7 +219,7 @@ function toast(t){let e=document.getElementById('toast');if(!e){e=document.creat
 async function rpc(fn,args){
  const h={'Content-Type':'application/json',apikey:CFG.key.trim()};
  if(CFG.key.startsWith('eyJ'))h.Authorization='Bearer '+CFG.key;
- let r;try{r=await fetch(CFG.url.trim().replace(/\/+$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args||{})})}catch(x){throw new Error('NET')}
+ let r;try{r=await fetch(new URL(CFG.url.trim()).origin+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args||{})})}catch(x){throw new Error('NET')}
  const j=await r.json().catch(()=>null);
  if(!r.ok)throw new Error((j&&j.message)||'NET');
  return j;
