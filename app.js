@@ -1,5 +1,5 @@
 const rp=n=>'Rp '+Number(n).toLocaleString('id-ID');
-let db={customers:[],pay:[],sal:[],reg:[],addons:[],plans:[],catalog:[],cs:{wa:'',jam:''},promo:{a:'',b:'',c:''},news:[],rek:[],payNote:'',qris:''};
+let db={customers:[],pay:[],sal:[],reg:[],delreq:[],addons:[],plans:[],catalog:[],cs:{wa:'',jam:''},promo:{a:'',b:'',c:''},news:[],rek:[],payNote:'',qris:''};
 let me=null,admin=false,sup=false,guest=false,flt='all',lastReg=null,cart={},topAmt=0,tab='home',modal='';
 const cust=()=>db.customers.find(c=>c.id===me);
 const total=c=>c.harga+c.addons.reduce((s,i)=>s+((db.addons.find(a=>a.id===i)||{}).price||0),0);
@@ -44,7 +44,7 @@ function addons(){
 }
 
 
-function catalog(){
+function catalog(){if(admin)return catalogEdit();
  return `<h2>Katalog produk & jasa</h2>${cartBar()}${db.catalog.map((p,i)=>`<div class="card"><b>${esc(p.n)}</b><div class="tag">${esc(p.p)}</div><p class="mut" style="margin:6px 0 10px">${esc(p.d)}</p>
  ${admin?'':`<button class="btn sm" onclick="addCart(${i})">Tambah ke keranjang</button>`}</div>`).join('')}`;
 }
@@ -52,7 +52,7 @@ function catalog(){
 function adminView(){
  return `${regNote()}${custHead()}<p class="mut">Belum bayar tampil di atas. Nyalakan isolir untuk memutus layanan yang menunggak.</p>
  ${custList().map(c=>`<div class="card"><div class="row"><div><b>${esc(c.name)}</b><div class="mut">${c.id} · ${c.paid?'Lunas':'Belum bayar '+rp(total(c))}</div></div>
- <div style="text-align:center"><label class="sw danger"><input type="checkbox" aria-label="Isolir ${esc(c.name)}" ${c.iso?'checked':''} onchange="iso('${c.id}',this.checked)"><span></span></label><div class="mut" style="font-size:11px">Isolir</div></div></div><div class="mut" style="margin-top:6px">${esc(c.paket)} · ${rp(c.harga)} · jatuh tempo ${fd(c.due)}</div><div class="row" style="margin-top:10px;justify-content:flex-start">${c.paid?`<span class="pill ok">Lunas</span><button class="btn alt sm" onclick="unpaid('${c.id}')">Batalkan</button>`:`<button class="btn sm" onclick="markPaid('${c.id}')">Tandai lunas</button>`}<button class="btn alt sm" onclick="editCust('${c.id}')">Ubah data</button></div><div class="row" style="margin-top:8px;justify-content:flex-start;flex-wrap:wrap"><button class="btn alt sm" onclick="saldoModal('${c.id}')">Saldo ${rp(c.saldo||0)}</button><button class="btn alt sm" onclick="resetPw('${c.id}')">Reset sandi</button><button class="btn alt sm" onclick="resetPin('${c.id}')">Reset PIN</button></div></div>`).join('')}<button class="btn" style="margin-bottom:10px" onclick="newCust()">+ Pelanggan baru</button>
+ <div style="text-align:center"><label class="sw danger"><input type="checkbox" aria-label="Isolir ${esc(c.name)}" ${c.iso?'checked':''} onchange="iso('${c.id}',this.checked)"><span></span></label><div class="mut" style="font-size:11px">Isolir</div></div></div><div class="mut" style="margin-top:6px">${esc(c.paket)} · ${rp(c.harga)} · jatuh tempo ${fd(c.due)}</div><div class="row" style="margin-top:10px;justify-content:flex-start">${c.paid?`<span class="pill ok">Lunas</span><button class="btn alt sm" onclick="unpaid('${c.id}')">Batalkan</button>`:`<button class="btn sm" onclick="markPaid('${c.id}')">Tandai lunas</button>${remindBtn(c)}`}<button class="btn alt sm" onclick="editCust('${c.id}')">Ubah data</button></div><div class="row" style="margin-top:8px;justify-content:flex-start;flex-wrap:wrap"><button class="btn alt sm" onclick="saldoModal('${c.id}')">Saldo ${rp(c.saldo||0)}</button><button class="btn alt sm" onclick="resetPw('${c.id}')">Reset sandi</button><button class="btn alt sm" onclick="resetPin('${c.id}')">Reset PIN</button>${sup?`<button class="btn alt sm" onclick="delCustModal('${c.id}')">Hapus akun</button>`:''}</div></div>`).join('')}<button class="btn" style="margin-bottom:10px" onclick="newCust()">+ Pelanggan baru</button>
  <h2>Kelola add-on</h2>
  ${db.addons.map(a=>`<div class="card"><div class="row"><b>${esc(a.name)}</b><button class="btn alt sm" onclick="delAdd('${a.id}')">Hapus</button></div>
  <label>Harga per bulan</label><input type="number" value="${a.price}" onchange="editPrice('${a.id}',this.value)"></div>`).join('')}
@@ -67,7 +67,7 @@ const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des
 const today=()=>new Date(Date.now()+7*36e5).toISOString().slice(0,10);
 const fd=d=>d.split('-').reverse().join('/');
 const waLink=m=>`https://wa.me/${db.cs.wa}?text=${encodeURIComponent(m)}`;
-function profile(){const c=cust();return `<h2>Profil saya</h2><div class="card"><label>ID Pengguna WiFi</label><input value="${c.id}" disabled><label for="pn">Nama</label><input id="pn" value="${esc(c.name)}"><label for="pp">No. WhatsApp</label><input id="pp" type="tel" value="${esc(c.phone||'')}"><label for="pa">Alamat pemasangan</label><input id="pa" value="${esc(c.addr||'')}"><div id="pmsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveProf()">Simpan perubahan</button></div>${secBox()}<button class="btn alt" onclick="logout()">Keluar</button>`}
+function profile(){const c=cust();return `<h2>Profil saya</h2><div class="card"><label>ID Pengguna WiFi</label><input value="${c.id}" disabled><label for="pn">Nama</label><input id="pn" value="${esc(c.name)}"><label for="pp">No. WhatsApp</label><input id="pp" type="tel" value="${esc(c.phone||'')}"><label for="pa">Alamat pemasangan</label><input id="pa" value="${esc(c.addr||'')}"><div id="pmsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveProf()">Simpan perubahan</button></div>${secBox()}${delAcc()}<button class="btn alt" onclick="logout()">Keluar</button>`}
 
 
 function rekap(){const P=db.pay.filter(x=>!x.noinc).sort((a,b)=>b.date.localeCompare(a.date));const m=today().slice(0,7);const sum=a=>a.reduce((s,x)=>s+x.amount,0);const mon=P.filter(x=>x.date.startsWith(m));const by={};P.forEach(x=>{const k=x.date.slice(0,7);by[k]=(by[k]||0)+x.amount});const bl=db.customers.filter(c=>!c.paid);
@@ -81,7 +81,7 @@ const nz=p=>p.replace(/\D/g,'').replace(/^0/,'62');
 function topModal(){return `<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet"><h3>Isi saldo</h3><label for="tn">Nominal</label><select id="tn">${[50000,100000,200000,500000].map(v=>`<option value="${v}">${rp(v)}</option>`).join('')}</select><button class="btn" onclick="topAmt=Number(tn.value);modal=transferModal('topup');render()">Lanjut: lihat rekening</button><p class="mut">Saldo bertambah setelah admin memverifikasi transfer Anda.</p></div></div>`}
 
 function custList(){return db.customers.filter(c=>flt==='all'||(flt==='paid'?c.paid:!c.paid)).sort((a,b)=>a.paid-b.paid||a.due.localeCompare(b.due)||a.name.localeCompare(b.name))}
-function custHead(){const n=db.customers.length,p=db.customers.filter(c=>c.paid).length;const f=(k,l)=>`<button class="chip ${flt===k?'on':''}" onclick="flt='${k}';render()">${l}</button>`;return `<h2>Pelanggan</h2><div class="chips">${f('all','Semua '+n)}${f('unpaid','Belum bayar '+(n-p))}${f('paid','Lunas '+p)}</div>`}
+function custHead(){const n=db.customers.length,p=db.customers.filter(c=>c.paid).length;const f=(k,l)=>`<button class="chip ${flt===k?'on':''}" onclick="flt='${k}';render()">${l}</button>`;return `<h2>Pelanggan</h2><div class="chips">${f('all','Semua '+n)}${f('unpaid','Belum bayar '+(n-p))}${f('paid','Lunas '+p)}</div><button class="btn alt sm" style="margin-bottom:10px" onclick="remindAll()">Ingatkan yang belum bayar</button>`}
 
 
 function gh(){return `<h2>Daftar harga</h2><p class="mut">Harga per bulan. Biaya pasang dan survei lokasi dikonfirmasi tim kami.</p>${db.plans.map(p=>`<div class="card row"><div><b>${esc(p.n)}</b><div class="mut">${esc(p.d||'')}</div></div><b>${rp(p.p)}</b></div>`).join('')}<h2>Add-on</h2>${db.addons.map(a=>`<div class="card row"><div><b>${esc(a.name)}</b><div class="mut">${esc(a.desc)}</div></div><b>${rp(a.price)}</b></div>`).join('')}<button class="btn" onclick="tab='reg';render()">Daftar sekarang</button>${catalog()}`}
@@ -110,8 +110,8 @@ function saldoModal(id){const c=db.customers.find(x=>x.id===id);modal=`<div clas
 
 
 
-function regNote(){const n=db.reg.length;if(!n)return '';return sup?`<div class="alert">${n} pendaftaran menunggu. Setujui atau tolak di tab Super.</div>`:`<p class="mut">${n} pendaftaran menunggu persetujuan super admin.</p>`}
-function superView(){return regBox()+`<h2>Rekening pembayaran</h2>${db.rek.map((r,i)=>`<div class="card"><div class="row"><b>${esc(r.bank)}</b><button class="btn alt sm" onclick="delRek(${i})">Hapus</button></div><label>Nomor rekening / e-wallet</label><input value="${esc(r.no)}" onchange="db.rek[${i}].no=this.value.trim();cfgSet('rek')"><label>Atas nama</label><input value="${esc(r.an)}" onchange="db.rek[${i}].an=this.value.trim();cfgSet('rek')"></div>`).join('')}<div class="card"><b>Tambah rekening</b><label for="rb">Bank / e-wallet</label><input id="rb" placeholder="BRI / OVO"><label for="rno">Nomor</label><input id="rno"><label for="ran">Atas nama</label><input id="ran"><button class="btn" onclick="addRek()">Tambah rekening</button></div><div class="card"><label>Instruksi pembayaran (tampil ke pelanggan)</label><input value="${esc(db.payNote||'')}" onchange="db.payNote=this.value;cfgSet('payNote')"></div>${qrisBox()}<h2>Akun admin</h2><div class="card"><label for="apA">PIN admin baru</label><input id="apA" type="password"><label for="apS">Sandi super admin baru</label><input id="apS" type="password"><div id="amsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveAuth()">Simpan</button><p class="mut">Kosongkan kolom yang tidak ingin diubah.</p></div>`}
+
+function superView(){return regBox()+delBox()+`<h2>Rekening pembayaran</h2>${db.rek.map((r,i)=>`<div class="card"><div class="row"><b>${esc(r.bank)}</b><button class="btn alt sm" onclick="delRek(${i})">Hapus</button></div><label>Nomor rekening / e-wallet</label><input value="${esc(r.no)}" onchange="db.rek[${i}].no=this.value.trim();cfgSet('rek')"><label>Atas nama</label><input value="${esc(r.an)}" onchange="db.rek[${i}].an=this.value.trim();cfgSet('rek')"></div>`).join('')}<div class="card"><b>Tambah rekening</b><label for="rb">Bank / e-wallet</label><input id="rb" placeholder="BRI / OVO"><label for="rno">Nomor</label><input id="rno"><label for="ran">Atas nama</label><input id="ran"><button class="btn" onclick="addRek()">Tambah rekening</button></div><div class="card"><label>Instruksi pembayaran (tampil ke pelanggan)</label><input value="${esc(db.payNote||'')}" onchange="db.payNote=this.value;cfgSet('payNote')"></div>${qrisBox()}<h2>Akun admin</h2><div class="card"><label for="apA">PIN admin baru</label><input id="apA" type="password"><label for="apS">Sandi super admin baru</label><input id="apS" type="password"><div id="amsg" class="mut" style="margin-bottom:8px"></div><button class="btn" onclick="saveAuth()">Simpan</button><p class="mut">Kosongkan kolom yang tidak ingin diubah.</p></div>`}
 
 
 
@@ -213,7 +213,7 @@ function newsBox(){const P=db.promo;return `<h2>Promo di beranda</h2><div class=
 /* ===== Lapisan server (Supabase) ===== */
 const CFG=window.SKY_CONFIG||{};
 let TOKEN='',ROLE='',MYID='';
-const ERR={AUTH:'Sesi habis. Silakan masuk lagi.',FORBIDDEN:'Akses ditolak.',INVALID:'Data tidak valid.',SALDO:'Saldo tidak cukup.',PIN:'PIN salah.',PINFMT:'PIN harus 6 angka.',PAID:'Tagihan sudah lunas.',NOTO:'ID tidak ditemukan.',OLDPW:'Sandi lama salah.',FULL:'Pendaftaran sedang penuh, hubungi CS.'};
+const ERR={AUTH:'Sesi habis. Silakan masuk lagi.',FORBIDDEN:'Akses ditolak.',INVALID:'Data tidak valid.',SALDO:'Saldo tidak cukup.',PIN:'PIN salah.',PINFMT:'PIN harus 6 angka.',PAID:'Tagihan sudah lunas.',NOTO:'ID tidak ditemukan.',OLDPW:'Sandi lama salah.',PW:'Sandi salah.',FULL:'Pendaftaran sedang penuh, hubungi CS.'};
 const msg=e=>ERR[e.message]||(e.message==='NET'?'Gagal terhubung ke server. Periksa internet dan config.js.':'Kesalahan server: '+e.message);
 function toast(t){let e=document.getElementById('toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','status');e.style.cssText='position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#0B1F44;color:#fff;padding:12px 18px;border-radius:99px;z-index:20;max-width:90%;text-align:center;font-weight:600;font-size:14px';document.body.appendChild(e)}e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2800)}
 async function rpc(fn,args){
@@ -224,7 +224,7 @@ async function rpc(fn,args){
  if(!r.ok)throw new Error((j&&j.message)||'NET');
  return j;
 }
-async function sync(){const s=await rpc('get_state',{p_token:TOKEN});Object.assign(db,s.cfg,{customers:s.customers,pay:s.pay,sal:s.sal,reg:s.reg});ROLE=s.role;MYID=s.id}
+async function sync(){const s=await rpc('get_state',{p_token:TOKEN});Object.assign(db,s.cfg,{customers:s.customers,pay:s.pay,sal:s.sal,reg:s.reg,delreq:s.delreq||[]});ROLE=s.role;MYID=s.id}
 function fail(e){if(e.message==='AUTH')logout();toast(msg(e))}
 async function act(fn,args,ok){try{await rpc(fn,Object.assign({p_token:TOKEN},args));await sync();if(ok)ok();render()}catch(e){fail(e)}}
 async function cfgSet(k,rr){try{await rpc('a_cfg',{p_token:TOKEN,p_k:k,p_v:db[k]});toast('Tersimpan.');if(rr)render()}catch(e){fail(e)}}
@@ -255,7 +255,7 @@ async function doLogin(){
 function logout(){
  if(TOKEN)rpc('logout',{p_token:TOKEN}).catch(()=>{});
  TOKEN='';ROLE='';me=null;admin=false;sup=false;guest=false;cart={};modal='';
- Object.assign(db,{customers:[],pay:[],sal:[],reg:[]});
+ Object.assign(db,{customers:[],pay:[],sal:[],reg:[],delreq:[]});
  try{localStorage.removeItem('sky_t')}catch(e){}
  login();
 }
@@ -339,5 +339,54 @@ async function approve(rid){
  catch(e){fail(e)}
 }
 function rejectReg(id){act('s_reject',{p_rid:id})}
+
+/* ===== Katalog editable, hapus akun, pengingat tagihan ===== */
+function catalogEdit(){
+ return `<h2>Ubah katalog</h2><p class="mut">Ubah isi kolom lalu ketuk di luar kolom, perubahan tersimpan otomatis.</p>${db.catalog.map((p,i)=>`<div class="card"><div class="row"><b>Item ${i+1}</b><button class="btn alt sm" onclick="delCat(${i})">Hapus</button></div>
+ <label>Nama</label><input value="${esc(p.n)}" onchange="db.catalog[${i}].n=this.value.trim();cfgSet('catalog')">
+ <label>Harga (teks bebas, contoh: Mulai Rp 2.800.000)</label><input value="${esc(p.p)}" onchange="db.catalog[${i}].p=this.value.trim();cfgSet('catalog')">
+ <label>Deskripsi</label><input value="${esc(p.d)}" onchange="db.catalog[${i}].d=this.value.trim();cfgSet('catalog')"></div>`).join('')}
+ <div class="card"><b>Tambah item baru</b><label for="ctn">Nama</label><input id="ctn"><label for="ctp">Harga</label><input id="ctp"><label for="ctd">Deskripsi</label><input id="ctd"><button class="btn" onclick="addCat()">Tambah ke katalog</button></div>`;
+}
+function addCat(){if(!ctn.value.trim())return;db.catalog.push({n:ctn.value.trim(),p:ctp.value.trim(),d:ctd.value.trim()});cfgSet('catalog',1)}
+function delCat(i){db.catalog.splice(i,1);cfgSet('catalog',1)}
+
+function delAcc(){
+ const p=db.delreq.length;
+ return `<div class="card"><b>Hapus akun</b>${p?`<p class="mut">Permintaan hapus akun Anda sedang diproses admin.</p><button class="btn alt sm" onclick="cancelDel()">Batalkan permintaan</button>`:`<p class="mut">Ajukan penghapusan akun dan datanya. Selesaikan sisa saldo dengan admin terlebih dahulu.</p><button class="btn alt sm" onclick="delReqModal()">Ajukan hapus akun</button>`}</div>`;
+}
+function delReqModal(){modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet"><h3>Ajukan hapus akun</h3><p class="mut">Admin akan memproses permintaan Anda. Data akun dihapus permanen setelah disetujui.</p><label for="drs">Alasan (opsional)</label><input id="drs"><label for="dpw">Masukkan sandi untuk konfirmasi</label><input id="dpw" type="password"><button class="btn" onclick="sendDelReq()">Kirim permintaan</button></div></div>`;render()}
+function sendDelReq(){if(!dpw.value){toast('Masukkan sandi.');return}act('c_delreq',{p_pw:dpw.value,p_reason:drs.value.trim()},()=>{modal='';toast('Permintaan terkirim ke admin.')})}
+function cancelDel(){act('c_delcancel',{},()=>toast('Permintaan dibatalkan.'))}
+
+function regNote(){
+ const n=db.reg.length,d=db.delreq.length;let h='';
+ if(n)h+=sup?`<div class="alert">${n} pendaftaran menunggu. Setujui atau tolak di tab Super.</div>`:`<p class="mut">${n} pendaftaran menunggu persetujuan super admin.</p>`;
+ if(d&&sup)h+=`<div class="alert">${d} permintaan hapus akun. Proses di tab Super.</div>`;
+ return h;
+}
+function delBox(){
+ if(!db.delreq.length)return '';
+ return `<h2>Permintaan hapus akun (${db.delreq.length})</h2>${db.delreq.map(r=>{const c=db.customers.find(x=>x.id===r.id);return `<div class="card"><b>${esc(r.name)}</b> <span class="mut">${esc(r.id)} · ${fd(r.date)}</span><div class="mut">Alasan: ${esc(r.reason||'-')}</div>${c?`<div class="mut">Saldo ${rp(c.saldo||0)} · ${c.paid?'Lunas':'Belum bayar '+rp(total(c))}</div>`:''}<div class="row" style="margin-top:10px;justify-content:flex-start"><button class="btn sm" onclick="delCustModal('${r.id}')">Hapus akun</button><button class="btn alt sm" onclick="rejectDel('${r.id}')">Tolak</button></div></div>`}).join('')}`;
+}
+function delCustModal(id){
+ const c=db.customers.find(x=>x.id===id);if(!c)return;
+ modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet"><h3>Hapus akun ${esc(c.name)}?</h3><p class="mut">ID ${c.id}. Data pelanggan dan riwayat saldo dihapus permanen. Riwayat pembayaran tetap ada untuk rekap, tanpa nama.</p><p class="mut">Saldo: <b>${rp(c.saldo||0)}</b> · Tagihan: <b>${c.paid?'Lunas':'Belum bayar '+rp(total(c))}</b></p>${(c.saldo||0)>0?'<div class="alert">Masih ada sisa saldo. Selesaikan dulu dengan pelanggan sebelum menghapus.</div>':''}<button class="btn" style="background:var(--warn);margin-bottom:8px" onclick="confirmDel('${c.id}')">Hapus permanen</button><button class="btn alt" onclick="modal='';render()">Batal</button></div></div>`;render();
+}
+function confirmDel(id){act('s_delcust',{p_cid:id},()=>{modal='';toast('Akun dihapus.')})}
+function rejectDel(id){act('s_delreject',{p_cid:id},()=>toast('Permintaan ditolak.'))}
+
+function remindMsg(c){
+ const d=Math.round((new Date(c.due)-new Date(today()))/864e5),st=d<0?'sudah lewat '+(-d)+' hari':d===0?'jatuh tempo hari ini':d+' hari lagi';
+ const L=CFG.appUrl||(/^https:\/\/(?!localhost)/.test(location.href)?location.origin+location.pathname:'');
+ return ['*PENGINGAT TAGIHAN - SkyConnect*','Halo '+c.name+',','Tagihan internet Anda:','ID Pelanggan: '+c.id,'Paket: '+c.paket,'Total: '+rp(total(c)),'Jatuh tempo: '+fd(c.due)+' ('+st+')','','Pembayaran bisa lewat transfer atau saldo di aplikasi'+(L?': '+L:'.'),'Abaikan pesan ini jika sudah membayar. Terima kasih.'].join('\n');
+}
+function remindBtn(c){
+ return c.phone?`<a class="btn alt sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${nz(c.phone)}?text=${encodeURIComponent(remindMsg(c))}">Ingatkan</a>`:`<button class="btn alt sm" onclick="toast('No. WhatsApp pelanggan belum diisi.')">Ingatkan</button>`;
+}
+function remindAll(){
+ const L=db.customers.filter(c=>!c.paid).sort((a,b)=>a.due.localeCompare(b.due));
+ modal=`<div class="modal" onclick="if(event.target===this){modal='';render()}"><div class="sheet" style="max-height:85vh;overflow:auto"><h3>Ingatkan tagihan (${L.length})</h3><p class="mut">Ketuk Ingatkan satu per satu. WhatsApp terbuka dengan pesan siap kirim.</p>${L.map(c=>`<div class="row" style="margin-bottom:10px"><div><b>${esc(c.name)}</b><div class="mut">${c.id} · ${rp(total(c))} · ${fd(c.due)}${late(c)?' · lewat':''}</div></div>${remindBtn(c)}</div>`).join('')||'<p class="mut">Semua tagihan sudah lunas.</p>'}</div></div>`;render();
+}
 
 boot();
